@@ -42,16 +42,22 @@ while running:
         player.handle_event(event)
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            # show pause screen
+
             choice = show_pause_screen(screen)
             if choice == "main_menu":
-                # back to startscreen
+
                 volume = show_start_screen(screen)
                 pygame.mixer.music.set_volume(volume)
+
+                background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+                player = Player( speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+
+                #OTHER THINGS CAN BE RESET HERE
+
             elif choice == "resume":
-                pass  # go back to game
+                pass  # ga gewoon verder
             elif choice == "quit":
-                running = False  # leave game
+                running = False  # verlaat de hoofdloop
 
     # Update game state
     player.update(dt)
