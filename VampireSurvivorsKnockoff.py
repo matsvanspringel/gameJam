@@ -15,6 +15,11 @@ pygame.display.set_caption("Vampire Survivors Clone")
 background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
 player = Player("assets/images/RandomAssVampire.png", speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 
+# Load and play background music
+pygame.mixer.music.load("assets/sounds/SillyMusic.mp3")
+pygame.mixer.music.set_volume(0.5)  # Optional: volume from 0.0 to 1.0
+pygame.mixer.music.play(-1)  # -1 = loop indefinitely
+
 clock = pygame.time.Clock()
 running = True
 
