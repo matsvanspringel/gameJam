@@ -2,13 +2,15 @@ import pygame, sys
 from background import Background
 from movement import Player
 from startscreen import show_start_screen
+from pauzescreen import show_pause_screen
+from startscreen import titlefont
 
 # Initialize Pygame
 pygame.init()
 
 # Screen setup
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 1000
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Vampire Survivors Clone")
 
@@ -33,6 +35,18 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         player.handle_event(event)
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            # show pause screen
+            choice = show_pause_screen(screen)
+            if choice == "main_menu":
+                # back to startscreen
+                volume = show_start_screen(screen)
+                pygame.mixer.music.set_volume(volume)
+            elif choice == "resume":
+                pass  # go back to game
+            elif choice == "quit":
+                running = False  # leave game
 
     # Update game state
     player.update()
