@@ -3,6 +3,7 @@ import sys
 from background import Background
 from movement import Player
 from startscreen import show_start_screen
+from pauzescreen import show_pause_screen
 
 # Initialize Pygame
 pygame.init()
