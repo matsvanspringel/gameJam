@@ -34,9 +34,9 @@ class Player:
 
         self.x = 0
         self.y = 0
-        self.speed = speed
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.speed = speed
 
         # Movement flags
         self.move_up = self.move_down = self.move_left = self.move_right = False
@@ -66,18 +66,22 @@ class Player:
 
         # Update position + direction
         if self.move_up:
+            self.speed = 5
             self.y -= self.speed
             self.current_direction = 'up'
             moving = True
         elif self.move_down:
+            self.speed = 5
             self.y += self.speed
             self.current_direction = 'down'
             moving = True
         if self.move_left:
+            self.speed = 5
             self.x -= self.speed
             self.current_direction = 'left'
             moving = True
         elif self.move_right:
+            self.speed = 5
             self.x += self.speed
             self.current_direction = 'right'
             moving = True
@@ -98,3 +102,15 @@ class Player:
             (self.screen_width // 2 - sprite.get_width() // 2,
              self.screen_height // 2 - sprite.get_height() // 2)
         )
+
+    def get_movement_vector(self):
+        dx = dy = 0
+        if self.move_up:
+            dy -= 1
+        if self.move_down:
+            dy += 1
+        if self.move_left:
+            dx -= 1
+        if self.move_right:
+            dx += 1
+        return dx, dy
