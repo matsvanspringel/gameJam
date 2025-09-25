@@ -37,9 +37,6 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                running = False
         player.handle_event(event)
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
