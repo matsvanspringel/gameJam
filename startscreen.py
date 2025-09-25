@@ -7,7 +7,7 @@ GRAY = (200, 200, 200)
 DARK_GRAY = (100, 100, 100)
 
 
-GAME_NAME = "Vampire Survivors Clone"
+GAME_NAME = "Veggie Vengeance"
 
 pygame.init()
 
