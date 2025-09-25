@@ -98,3 +98,17 @@ class Player:
             (self.screen_width // 2 - sprite.get_width() // 2,
              self.screen_height // 2 - sprite.get_height() // 2)
         )
+
+    def get_direction_vector(self):
+        dx, dy = 0, 0
+        if self.current_direction == 'up':
+            dy = -1
+        elif self.current_direction == 'down':
+            dy = 1
+        elif self.current_direction == 'left':
+            dx = -1
+        elif self.current_direction == 'right':
+            dx = 1
+        return dx, dy
+
+   
