@@ -16,23 +16,26 @@ screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
 pygame.display.set_caption("Vampire Survivors Clone")
 
-# Startscreen
+# Load and play background music
+
+ # use volume
+pygame.mixer.music.load("assets/sounds/SillyMusic.mp3")
+pygame.mixer.music.play(-1)  # Loop indefinitely
+# startscreen
+
 volume = show_start_screen(screen)
 pygame.mixer.music.set_volume(volume)
-
 # Create objects
 background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
 player = Player(speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 
-# Load and play background music
-pygame.mixer.music.load("assets/sounds/SillyMusic.mp3")
-pygame.mixer.music.set_volume(0.5)
-pygame.mixer.music.play(-1)
+
 
 # Projectiles setup
 projectiles = pygame.sprite.Group()
 TOMATO_COOLDOWN = 300  # milliseconds
 last_shot_time = 0
+
 
 clock = pygame.time.Clock()
 running = True
