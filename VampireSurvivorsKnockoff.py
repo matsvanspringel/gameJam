@@ -10,7 +10,7 @@ SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Vampire Survivors Clone")
 
-# Load and scale images
+# Load and scale images!
 background_img = pygame.image.load("assets/images/RandomAssBackground.jpg").convert()
 character_img = pygame.image.load("assets/images/RandomAssVampire.png").convert_alpha()
 character_img = pygame.transform.scale(character_img, (100, 100))  # Scale character down
