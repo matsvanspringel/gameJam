@@ -11,18 +11,26 @@ class Player:
         self.screen_width = screen_width
         self.screen_height = screen_height
 
+        # Scancodes for WASD physical key positions
+        self.up_sc = 26     # W key position
+        self.down_sc = 22   # S key position
+        self.left_sc = 4    # A key position
+        self.right_sc = 7   # D key position
+
     def handle_event(self, event):
         """Handle movement input events."""
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP: self.move_up = True
-            if event.key == pygame.K_DOWN: self.move_down = True
-            if event.key == pygame.K_LEFT: self.move_left = True
-            if event.key == pygame.K_RIGHT: self.move_right = True
+            sc = event.scancode
+            if sc == self.up_sc: self.move_up = True
+            if sc == self.down_sc: self.move_down = True
+            if sc == self.left_sc: self.move_left = True
+            if sc == self.right_sc: self.move_right = True
         elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_UP: self.move_up = False
-            if event.key == pygame.K_DOWN: self.move_down = False
-            if event.key == pygame.K_LEFT: self.move_left = False
-            if event.key == pygame.K_RIGHT: self.move_right = False
+            sc = event.scancode
+            if sc == self.up_sc: self.move_up = False
+            if sc == self.down_sc: self.move_down = False
+            if sc == self.left_sc: self.move_left = False
+            if sc == self.right_sc: self.move_right = False
 
     def update(self):
         """Update player position based on movement flags."""
