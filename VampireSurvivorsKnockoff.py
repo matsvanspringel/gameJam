@@ -1,10 +1,12 @@
-import pygame, sys
+import pygame
+import sys
 from background import Background
 from movement import Player
 from startscreen import show_start_screen
 
 # Initialize Pygame
 pygame.init()
+pygame.mixer.init()  # Initialize mixer for music
 
 # Screen setup
 SCREEN_WIDTH = 800
@@ -18,24 +20,27 @@ pygame.mixer.music.set_volume(volume)
 
 # Create objects
 background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
-player = Player("assets/images/RandomAssVampire.png", speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+player = Player(speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 
 # Load and play background music
 pygame.mixer.music.load("assets/sounds/SillyMusic.mp3")
-pygame.mixer.music.set_volume(0.5)  # Optional: volume from 0.0 to 1.0
-pygame.mixer.music.play(-1)  # -1 = loop indefinitely
+pygame.mixer.music.set_volume(0.5)  # Optional: 0.0 to 1.0
+pygame.mixer.music.play(-1)  # Loop indefinitely
 
 clock = pygame.time.Clock()
 running = True
 
 while running:
+    dt = clock.tick(60)  # Delta time in milliseconds
+
+    # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         player.handle_event(event)
 
     # Update game state
-    player.update()
+    player.update(dt)
     background.update_tiles(player.x, player.y)
 
     # Draw everything
@@ -44,7 +49,6 @@ while running:
     player.draw(screen)
 
     pygame.display.flip()
-    clock.tick(60)
 
 pygame.quit()
 sys.exit()
