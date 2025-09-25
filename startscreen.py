@@ -1,11 +1,13 @@
 import pygame
 import sys
 
+
 WHITE = (255, 255, 255)
 GRAY = (200, 200, 200)
 DARK_GRAY = (100, 100, 100)
 
-GAME_NAME = "Vampire Survivors Clone"
+
+GAME_NAME = "Veggie Vengeance"
 
 pygame.init()
 
@@ -45,7 +47,7 @@ class Button:
 def show_start_screen(screen):
     clock = pygame.time.Clock()
     state = "menu"
-    volume = 0.5
+    volume = 0.2
     last_nonzero_volume = volume  # onthoud laatste >0 waarde voor unmute
 
     # Achtergrond
@@ -188,6 +190,8 @@ def show_start_screen(screen):
 
         pygame.display.flip()
         clock.tick(60)
+
+        pygame.mixer.music.set_volume(volume)
 
         if state == "start":
             return volume
