@@ -49,7 +49,7 @@ while running:
 
     # Handle shooting
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_SPACE]:
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
         now = pygame.time.get_ticks()
         if now - last_shot_time >= TOMATO_COOLDOWN:
             tomato = TomatoProjectile(
@@ -61,8 +61,7 @@ while running:
             projectiles.add(tomato)
             last_shot_time = now
 
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             choice = show_pause_screen(screen)
             if choice == "main_menu":
 
@@ -78,6 +77,7 @@ while running:
                 pass  # ga gewoon verder
             elif choice == "quit":
                 running = False  # verlaat de hoofdloop
+
 
     
 
