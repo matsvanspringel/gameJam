@@ -10,7 +10,7 @@ GAME_NAME = "Vampire Survivors Clone"
 pygame.init()
 
 font_title_path = "assets/fonts/PressStart2P-Regular.ttf"
-titlefont = pygame.font.Font(font_title_path, 40)  # correct gebruik van Google Font
+titlefont = pygame.font.Font(font_title_path, 40)
 font_path = "assets/fonts/PixelifySans-VariableFont_wght.ttf"
 font = pygame.font.Font(font_path, 30)
 
@@ -23,6 +23,9 @@ class Button:
 
     def set_center(self, x, y):
         self.rect.center = (x, y)
+
+    def set_text(self, text):
+        self.text = text
 
     def draw(self, screen):
         mouse_pos = pygame.mouse.get_pos()
@@ -43,8 +46,9 @@ def show_start_screen(screen):
     clock = pygame.time.Clock()
     state = "menu"
     volume = 0.5
+    last_nonzero_volume = volume  # onthoud laatste >0 waarde voor unmute
 
-    # BG CALC
+    # Achtergrond
     bg_raw = pygame.image.load("assets/images/RandomAssBackground.jpg").convert()
     def scale_bg():
         return pygame.transform.scale(bg_raw, (screen.get_width(), screen.get_height()))
@@ -62,27 +66,39 @@ def show_start_screen(screen):
         pygame.quit()
         sys.exit()
 
-    # BUTTONS W AND H
+    def go_menu():
+        nonlocal state
+        state = "menu"
+
+    def toggle_mute():
+        nonlocal volume, last_nonzero_volume
+        if volume > 0.0:
+            last_nonzero_volume = volume
+            volume = 0.0
+        else:
+            volume = last_nonzero_volume if last_nonzero_volume > 0 else 0.5
+
+    # Menu-knoppen
     buttons = [
         Button("Start Game", 200, 50, start_game),
         Button("Settings",   200, 50, go_settings),
         Button("Quit",       200, 50, quit_game)
     ]
 
-    # Slider (wordt ook dynamisch uitgelijnd)
+    # SETTINGS: slider + Mute-knop + Back-knop
     slider_width, slider_height = 240, 10
     slider_rect = pygame.Rect(0, 0, slider_width, slider_height)
-    knob_x = 0  # wordt gezet in layout()
+    knob_x = 0
+    mute_button_settings = Button("Mute", 160, 44, toggle_mute)
+    back_button_settings = Button("Back to Menu", 220, 44, go_menu)
 
     def layout_menu():
-        # Titel centreren bovenaan
         title = titlefont.render(GAME_NAME, True, WHITE)
         title_pos = (screen.get_width() // 2 - title.get_width() // 2, int(screen.get_height() * 0.18))
 
-        # Verticale kolom voor knoppen
         cx = screen.get_width() // 2
         base_y = int(screen.get_height() * 0.40)
-        spacing = max(60, int(screen.get_height() * 0.08))  # schaalbare afstand
+        spacing = max(60, int(screen.get_height() * 0.08))
         for i, b in enumerate(buttons):
             b.set_center(cx, base_y + i * spacing)
 
@@ -91,41 +107,40 @@ def show_start_screen(screen):
     def layout_settings():
         nonlocal knob_x
         cx = screen.get_width() // 2
+        h = screen.get_height()
 
         settings_title = titlefont.render("Settings", True, WHITE)
-        settings_title_pos = (cx - settings_title.get_width() // 2, int(screen.get_height() * 0.18))
+        settings_title_pos = (cx - settings_title.get_width() // 2, int(h * 0.18))
 
         # Slider centreren
-        slider_rect.center = (cx, int(screen.get_height() * 0.45))
+        slider_rect.center = (cx, int(h * 0.45))
         knob_x = slider_rect.x + int(volume * slider_rect.width)
 
-        # Onder-teksten centreren
+        # Mute-knop gecentreerd onder de slider
+        mute_button_settings.set_center(cx, slider_rect.bottom + 40)
+        mute_button_settings.set_text("Unmute" if volume == 0.0 else "Mute")
+
+        # Back-knop op de locatie waar de ESC-tekst stond (onderaan)
+        back_button_settings.set_center(cx, int(h * 0.85))
+
         small_font = pygame.font.Font(font_path, 20)
         vol_text = small_font.render(f"Volume: {int(volume*100)}%", True, WHITE)
-        vol_text_pos = (cx - vol_text.get_width() // 2, slider_rect.bottom + 30)
+        vol_text_pos = (cx - vol_text.get_width() // 2, mute_button_settings.rect.bottom + 12)
 
-        esc_text = small_font.render("Press ESC to return to the main menu", True, WHITE)
-        esc_text_pos = (cx - esc_text.get_width() // 2, int(screen.get_height() * 0.85))
-
-        return settings_title, settings_title_pos, vol_text, vol_text_pos, esc_text, esc_text_pos
+        # ESC-tekst verwijderd, maar ESC blijft werken via event handling
+        return settings_title, settings_title_pos, vol_text, vol_text_pos
 
     # Initial layout
     title, title_pos = layout_menu()
-    settings_title = settings_title_pos = vol_text = vol_text_pos = esc_text = esc_text_pos = None
+    settings_title = settings_title_pos = vol_text = vol_text_pos = None
 
     while True:
-        #  WINDOWRESIZE
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.VIDEORESIZE:
-                # SCREENSCALE
                 background_img = scale_bg()
-                if state == "menu":
-                    title, title_pos = layout_menu()
-                else:
-                    settings_title, settings_title_pos, vol_text, vol_text_pos, esc_text, esc_text_pos = layout_settings()
 
             if state == "menu":
                 for b in buttons:
@@ -143,15 +158,16 @@ def show_start_screen(screen):
                         volume = (knob_x - slider_rect.x) / slider_rect.width
                         volume = max(0.0, min(1.0, volume))
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    state = "menu"
-                    title, title_pos = layout_menu()
+                    go_menu()  # ESC blijft de functie behouden
 
-        # Elke frame de layout up-to-date houden (robust, zelfs zonder VIDEORESIZE events)
+                mute_button_settings.handle_event(event)
+                back_button_settings.handle_event(event)
+
+        # Elke frame layout updaten (responsive)
         background_img = pygame.transform.scale(bg_raw, (screen.get_width(), screen.get_height()))
-        if state == "menu":
-            title, title_pos = layout_menu()
-        else:
-            settings_title, settings_title_pos, vol_text, vol_text_pos, esc_text, esc_text_pos = layout_settings()
+        title, title_pos = layout_menu()
+        if state == "settings":
+            settings_title, settings_title_pos, vol_text, vol_text_pos = layout_settings()
 
         screen.blit(background_img, (0, 0))
 
@@ -162,13 +178,13 @@ def show_start_screen(screen):
 
         elif state == "settings":
             screen.blit(settings_title, settings_title_pos)
-
             pygame.draw.rect(screen, GRAY, slider_rect, border_radius=5)
             knob_x = max(slider_rect.x, min(knob_x, slider_rect.x + slider_rect.width))
             pygame.draw.circle(screen, WHITE, (knob_x, slider_rect.centery), 12)
 
+            mute_button_settings.draw(screen)
+            back_button_settings.draw(screen)
             screen.blit(vol_text, vol_text_pos)
-            screen.blit(esc_text, esc_text_pos)
 
         pygame.display.flip()
         clock.tick(60)
