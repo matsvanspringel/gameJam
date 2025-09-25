@@ -7,8 +7,8 @@ from startscreen import show_start_screen
 pygame.init()
 
 # Screen setup
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 950
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Vampire Survivors Clone")
 
