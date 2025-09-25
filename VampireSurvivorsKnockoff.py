@@ -4,15 +4,16 @@ from background import Background
 from movement import Player
 from startscreen import show_start_screen
 from tomato_projectile import TomatoProjectile  # make sure this is correct
+from pauzescreen import show_pause_screen
+
 
 # Initialize Pygame
 pygame.init()
 pygame.mixer.init()
 
 # Screen setup
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
 pygame.display.set_caption("Vampire Survivors Clone")
 
 # Startscreen
@@ -58,6 +59,25 @@ while running:
             )
             projectiles.add(tomato)
             last_shot_time = now
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+
+            choice = show_pause_screen(screen)
+            if choice == "main_menu":
+
+                volume = show_start_screen(screen)
+                pygame.mixer.music.set_volume(volume)
+
+                background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+                player = Player( speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+
+                #OTHER THINGS CAN BE RESET HERE
+
+            elif choice == "resume":
+                pass  # ga gewoon verder
+            elif choice == "quit":
+                running = False  # verlaat de hoofdloop
+
 
     # Update game state
     player.update(dt)
