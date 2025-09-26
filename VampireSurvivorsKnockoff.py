@@ -31,6 +31,9 @@ night_music_channel.play(night_music, loops=-1)
 # Separate max volumes
 DAY_MAX_VOLUME = 0.5
 NIGHT_MAX_VOLUME = 0.8  # Louder night music
+
+master_volume = 1.0  # master volume die via UI wordt aangepast
+
 silly_music_channel.set_volume(DAY_MAX_VOLUME)
 night_music_channel.set_volume(0.0)  # Start muted
 
@@ -51,21 +54,22 @@ def update_day_night(dt):
     cycle_timer += dt
     alpha = 0
 
-    silly_vol = 0.0
-    night_vol = 0.0
+    # basis mix (0..1) zonder master
+    silly_mix = 0.0
+    night_mix = 0.0
 
     if phase == "day":
         if cycle_timer >= DAY_DURATION:
             phase = "day_to_night"
             cycle_timer = 0
         alpha = 0
-        silly_vol = DAY_MAX_VOLUME
-        night_vol = 0
+        silly_mix = 1.0
+        night_mix = 0.0
     elif phase == "day_to_night":
-        t = cycle_timer / TRANSITION_DURATION
+        t = min(1.0, cycle_timer / TRANSITION_DURATION)
         alpha = int(t * 140)
-        silly_vol = DAY_MAX_VOLUME * (1 - t)
-        night_vol = NIGHT_MAX_VOLUME * t
+        silly_mix = 1.0 - t
+        night_mix = t
         if cycle_timer >= TRANSITION_DURATION:
             phase = "night"
             cycle_timer = 0
@@ -74,26 +78,32 @@ def update_day_night(dt):
             phase = "night_to_day"
             cycle_timer = 0
         alpha = 140
-        silly_vol = 0
-        night_vol = NIGHT_MAX_VOLUME
+        silly_mix = 0.0
+        night_mix = 1.0
     elif phase == "night_to_day":
-        t = cycle_timer / TRANSITION_DURATION
+        t = min(1.0, cycle_timer / TRANSITION_DURATION)
         alpha = int((1 - t) * 140)
-        silly_vol = DAY_MAX_VOLUME * t
-        night_vol = NIGHT_MAX_VOLUME * (1 - t)
+        silly_mix = t
+        night_mix = 1.0 - t
         if cycle_timer >= TRANSITION_DURATION:
             phase = "day"
             cycle_timer = 0
 
     day_night_overlay.fill((0, 0, 0, alpha))
 
-    # Apply volumes
-    silly_music_channel.set_volume(silly_vol)
-    night_music_channel.set_volume(night_vol)
+    # Toepassen met master volume en per-fase max
+    silly_music_channel.set_volume(master_volume * DAY_MAX_VOLUME * silly_mix)
+    night_music_channel.set_volume(master_volume * NIGHT_MAX_VOLUME * night_mix)
 
 # Startscreen
-volume = show_start_screen(screen)
-pygame.mixer.music.set_volume(volume)
+for volume in show_start_screen(screen):
+    master_volume = max(0.0, min(1.0, volume))  # clamp
+    # direct toepassen
+    silly_music_channel.set_volume(master_volume * DAY_MAX_VOLUME)  # start in 'day'
+    night_music_channel.set_volume(0.0)
+    pass
+
+
 
 # Objecten
 background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -156,23 +166,44 @@ while running:
                 projectiles.add(tomato)
                 last_shot_time = now
 
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                choice = show_pause_screen(screen)
-                if choice == "main_menu":
-
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                if game_over:
+                    # vanuit game over terug naar main menu
                     volume = show_start_screen(screen)
-                    pygame.mixer.music.set_volume(volume)
+                    master_volume = max(0.0, min(1.0, volume))
+                    # direct toepassen (update_day_night zal elke frame ook bijsturen)
+                    if phase == "day":
+                        silly_music_channel.set_volume(master_volume * DAY_MAX_VOLUME)
+                        night_music_channel.set_volume(0.0)
+                    elif phase == "night":
+                        silly_music_channel.set_volume(0.0)
+                        night_music_channel.set_volume(master_volume * NIGHT_MAX_VOLUME)
+                    # ... ga uit game over ...
+                    game_over = False
+                    game_over_time = None
+                else:
+                    # pauzemenu
+                    choice = show_pause_screen(screen)
+                    if choice == "main_menu":
+                        volume = show_start_screen(screen)
+                        master_volume = max(0.0, min(1.0, volume))
+                        # direct toepassen
+                        if phase == "day":
+                            silly_music_channel.set_volume(master_volume * DAY_MAX_VOLUME)
+                            night_music_channel.set_volume(0.0)
+                        elif phase == "night":
+                            silly_music_channel.set_volume(0.0)
+                            night_music_channel.set_volume(master_volume * NIGHT_MAX_VOLUME)
 
-                    background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
-                    player = Player( speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
-                    projectiles.empty()  # optioneel: wis bestaande projectielen
-
-                    #OTHER THINGS CAN BE RESET HERE
-
-                elif choice == "resume":
-                    pass  # ga gewoon verder
-                elif choice == "quit":
-                    running = False  # verlaat de hoofdloop
+                        background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+                        player = Player(0, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+                        phase = "day"
+                        enemy = Enemy(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT, 50, 50, enemy_image, health=100, speed=2)
+                    elif choice == "resume":
+                        pass
+                    elif choice == "quit":
+                        running = False
 
     if not game_over:
         # Update game state
@@ -201,4 +232,3 @@ while running:
 
 pygame.quit()
 sys.exit()
- 

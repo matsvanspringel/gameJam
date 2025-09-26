@@ -193,5 +193,7 @@ def show_start_screen(screen):
 
         pygame.mixer.music.set_volume(volume)
 
+        yield volume
+
         if state == "start":
             return volume
