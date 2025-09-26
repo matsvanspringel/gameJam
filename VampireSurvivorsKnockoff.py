@@ -5,7 +5,7 @@ from movement import Player
 from enemies import Enemy
 from startscreen import show_start_screen
 from nature import NatureManager
-from tomato_projectile import TomatoProjectile  # make sure this is correct
+from tomato_projectile import TomatoProjectile  # zorg dat dit bestand/klasse bestaat
 from pauzescreen import show_pause_screen
 
 # Initialize Pygame
@@ -94,7 +94,8 @@ def update_day_night(dt):
 # Startscreen
 volume = show_start_screen(screen)
 pygame.mixer.music.set_volume(volume)
-# Create objects
+
+# Objecten
 background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
 player = Player(0, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 
@@ -106,7 +107,7 @@ nature = NatureManager(tile_size=100, screen_width=SCREEN_WIDTH, screen_height=S
 
 # Projectiles setup
 projectiles = pygame.sprite.Group()
-TOMATO_COOLDOWN = 300  # milliseconds
+TOMATO_COOLDOWN = 300  # ms
 last_shot_time = 0
 
 clock = pygame.time.Clock()
@@ -138,24 +139,22 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                running = False
-        if not game_over:
-            player.handle_event(event)
-        # Handle shooting
-        keys = pygame.key.get_pressed()
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            now = pygame.time.get_ticks()
-            if now - last_shot_time >= TOMATO_COOLDOWN:
-                tomato = TomatoProjectile(
-                    player.screen_width // 2,  # spawn at player center (screen coordinates)
-                    player.screen_height // 2,
-                    player.get_direction_vector(),  # add this method in Player to return facing vector
-                    speed=12
-                )
-                projectiles.add(tomato)
-                last_shot_time = now
+        player.handle_event(event)
+
+
+    # Handle shooting
+    keys = pygame.key.get_pressed()
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+        now = pygame.time.get_ticks()
+        if now - last_shot_time >= TOMATO_COOLDOWN:
+            tomato = TomatoProjectile(
+                player.screen_width // 2,  # spawn at player center (screen coordinates)
+                player.screen_height // 2,
+                player.get_direction_vector(),  # add this method in Player to return facing vector
+                speed=12
+            )
+            projectiles.add(tomato)
+            last_shot_time = now
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 choice = show_pause_screen(screen)
@@ -166,6 +165,7 @@ while running:
 
                     background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
                     player = Player( speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+                    projectiles.empty()  # optioneel: wis bestaande projectielen
 
                     #OTHER THINGS CAN BE RESET HERE
 
