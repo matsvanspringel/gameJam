@@ -33,10 +33,11 @@ class NatureManager:
         """Spawn/despawn objects in a wide area around the player, keeping max_objects."""
         visible_area_width = self.screen_width * 2
         visible_area_height = self.screen_height * 2
-        min_x = player_x - visible_area_width // 2
-        max_x = player_x + visible_area_width // 2
-        min_y = player_y - visible_area_height // 2
-        max_y = player_y + visible_area_height // 2
+        # Use integer division (//) to ensure ints for randint
+        min_x = int(player_x - visible_area_width // 2)
+        max_x = int(player_x + visible_area_width // 2)
+        min_y = int(player_y - visible_area_height // 2)
+        max_y = int(player_y + visible_area_height // 2)
 
         # Remove objects outside extended area
         for pos in list(self.objects.keys()):
@@ -61,4 +62,3 @@ class NatureManager:
             screen_x = center_x + (obj_x - player_x) - sprite.get_width() // 2
             screen_y = center_y + (obj_y - player_y) - sprite.get_height() // 2
             screen.blit(sprite, (screen_x, screen_y))
-
