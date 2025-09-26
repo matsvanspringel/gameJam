@@ -314,8 +314,10 @@ while running:
 
     if not game_over:
         player_dx, player_dy = player.get_movement_vector()
-        player.update(dt)
-        background.update_tiles(player.x + dx, player.y + dy)
+        nature_rects = nature.get_collision_rects()
+        player.update(dt, nature_collision_rects=nature_rects)
+        background.update_tiles(player.x, player.y)
+
 
     projectiles.update()
 

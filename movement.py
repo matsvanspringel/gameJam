@@ -4,10 +4,10 @@ class Player:
     def __init__(self, speed, screen_width, screen_height):
         # Load base left-facing images
         left1 = pygame.transform.scale(
-            pygame.image.load("assets/images/MainCharacter/side.png").convert_alpha(), (100, 100)
+            pygame.image.load("assets/images/MainCharacter/side.png").convert_alpha(), (80, 100)
         )
         left2 = pygame.transform.scale(
-            pygame.image.load("assets/images/MainCharacter/side2.png").convert_alpha(), (100, 100)
+            pygame.image.load("assets/images/MainCharacter/side2.png").convert_alpha(), (80, 100)
         )
 
         # Create right-facing by flipping left
@@ -16,12 +16,12 @@ class Player:
 
         self.sprites = {
             'up': [
-                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/back.png").convert_alpha(), (100, 100)),
-                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/back2.png").convert_alpha(), (100, 100))
+                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/back.png").convert_alpha(), (80, 100)),
+                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/back2.png").convert_alpha(), (80, 100))
             ],
             'down': [
-                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/front.png").convert_alpha(), (100, 100)),
-                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/front2.png").convert_alpha(), (100, 100))
+                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/front.png").convert_alpha(), (80, 100)),
+                pygame.transform.scale(pygame.image.load("assets/images/MainCharacter/front2.png").convert_alpha(), (80, 100))
             ],
             'left': [left1, left2],
             'right': [right1, right2]
@@ -62,35 +62,49 @@ class Player:
             if sc == self.left_sc: self.move_left = False
             if sc == self.right_sc: self.move_right = False
 
-    def update(self, dt):
+    def update(self, dt, nature_collision_rects=None):
         moving = False
         direction = pygame.Vector2(0, 0)
 
-        # Update position + direction
+        old_x, old_y = self.x, self.y
+        new_x, new_y = self.x, self.y
         if self.move_up:
             self.speed = 5
-            self.y -= self.speed
+            new_y -= self.speed
             self.current_direction = 'up'
             direction.y = -1
             moving = True
         elif self.move_down:
             self.speed = 5
-            self.y += self.speed
+            new_y += self.speed
             self.current_direction = 'down'
             direction.y = 1
             moving = True
         if self.move_left:
             self.speed = 5
-            self.x -= self.speed
+            new_x -= self.speed
             self.current_direction = 'left'
             direction.x = -1
             moving = True
         elif self.move_right:
             self.speed = 5
-            self.x += self.speed
+            new_x += self.speed
             self.current_direction = 'right'
             direction.x = 1
             moving = True
+
+        # Collision check
+        player_rect = pygame.Rect(new_x - 50, new_y - 50, 100, 100)
+        blocked = False
+        if nature_collision_rects:
+            for rect in nature_collision_rects:
+                if player_rect.colliderect(rect):
+                    blocked = True
+                    break
+
+        if not blocked:
+            self.x, self.y = new_x, new_y
+        # anders: positie blijft hetzelfde
 
         # Update current direction
         if moving:
