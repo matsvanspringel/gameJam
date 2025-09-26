@@ -112,6 +112,7 @@ last_shot_time = 0
 clock = pygame.time.Clock()
 running = True
 game_over = False
+game_over_time = None
 
 def check_collision(player, enemy):
     # Player is gecentreerd, enemy heeft x, y, width, height
@@ -128,53 +129,45 @@ def check_collision(player, enemy):
 while running:
     dt = clock.tick(60)
 
-    # Update day-night cycle
-    update_day_night(dt)
-
-    # Update game objects
-    nature.update(player.x, player.y)
-
-    # Event handling
+    # 1) Events ALTIJD verwerken
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if not game_over:
-            player.handle_event(event)
-        # Handle shooting
-        keys = pygame.key.get_pressed()
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            now = pygame.time.get_ticks()
-            if now - last_shot_time >= TOMATO_COOLDOWN:
-                tomato = TomatoProjectile(
-                    player.screen_width // 2,  # spawn at player center (screen coordinates)
-                    player.screen_height // 2,
-                    player.get_direction_vector(),  # add this method in Player to return facing vector
-                    speed=12
-                )
-                projectiles.add(tomato)
-                last_shot_time = now
-
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                choice = show_pause_screen(screen)
-                if choice == "main_menu":
-
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                if game_over:
                     volume = show_start_screen(screen)
-                    pygame.mixer.music.set_volume(volume)
+                    game_over = False
+                    game_over_time = None
+                else:
+                    choice = show_pause_screen(screen)
+                    if choice == "main_menu":
+                        volume = show_start_screen(screen)
+                        pygame.mixer.music.set_volume(volume)
+                        background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+                        player = Player(0, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+                        phase = "day"
+                        enemy = Enemy(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT, 50, 50, enemy_image, health=100, speed=2)
+                    elif choice == "quit":
+                        running = False
+            if not game_over:
+                player.handle_event(event)
+                if event.key == pygame.K_SPACE:
+                    now = pygame.time.get_ticks()
+                    if now - last_shot_time >= TOMATO_COOLDOWN:
+                        tomato = TomatoProjectile(
+                            player.screen_width // 2,
+                            player.screen_height // 2,
+                            player.get_direction_vector(),
+                            speed=12
+                        )
+                        projectiles.add(tomato)
+                        last_shot_time = now
 
-                    background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
-                    player = Player( 0, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
-                    phase = "day"
-                    enemy = Enemy(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT, 50, 50, enemy_image, health=100, speed=2)
-
-                    #OTHER THINGS CAN BE RESET HERE
-
-                elif choice == "resume":
-                    pass  # ga gewoon verder
-                elif choice == "quit":
-                    running = False  # verlaat de hoofdloop
-
+    # 2) Updates (alleen als niet game over)
     if not game_over:
-        # Update game state
+        update_day_night(dt)
+        nature.update(player.x, player.y)
         player_dx, player_dy = player.get_movement_vector()
         player.update(dt)
         background.update_tiles(player.x, player.y)
@@ -182,28 +175,23 @@ while running:
 
         if check_collision(player, enemy):
             game_over = True
+            game_over_time = pygame.time.get_ticks()
+    else:
+        # auto-exit na 5s
+        if game_over_time and pygame.time.get_ticks() - game_over_time >= 5000:
+            running = False
 
-    # Draw everything
-    while game_over:
-        screen.fill((0, 0, 0))
+    # 3) Draw (exact één pad)
+    screen.fill((0, 0, 0))
+    if game_over:
         font = pygame.font.SysFont(None, 120)
         text = font.render("Game Over", True, (255, 0, 0))
         text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         screen.blit(text, text_rect)
-
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            volume = show_start_screen(screen)
-            game_over = False
-            continue
-
     else:
-        screen.fill((0, 0, 0))
         background.draw(screen, player.x, player.y)
         enemy.draw(screen)
         player.draw(screen)
-  
-    pygame.display.flip()
+        # eventueel projectiles tekenen/update als je die elders niet tekent
 
-pygame.quit()
-sys.exit()
- 
+    pygame.display.flip()
