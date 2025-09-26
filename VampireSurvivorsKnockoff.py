@@ -17,13 +17,18 @@ screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
 pygame.display.set_caption("Vampire Survivors Clone")
 
+#played booleans for 1 time music
+game_over_sound_played = False
+
 # Load music as Sound objects for volume control
 silly_music = pygame.mixer.Sound("assets/sounds/SillyMusic.mp3")
 night_music = pygame.mixer.Sound("assets/sounds/nightime.mp3")  # fixed typo
+game_over_sound = pygame.mixer.Sound("assets/Sounds/soundEffects/gameOver.wav")
 
 # Channels for music
 silly_music_channel = pygame.mixer.Channel(0)
 night_music_channel = pygame.mixer.Channel(1)
+game_over_channel = pygame.mixer.Channel(3)
 
 silly_music_channel.play(silly_music, loops=-1)
 night_music_channel.play(night_music, loops=-1)
@@ -186,11 +191,18 @@ while running:
 
     # Draw everything
     if game_over:
+        if not game_over_sound_played:
+            silly_music_channel.stop()
+            night_music_channel.stop()
+            game_over_channel.play(game_over_sound, loops=0)
+            game_over_sound_played = True
+
         screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 120)
         text = font.render("Game Over", True, (255, 0, 0))
         text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         screen.blit(text, text_rect)
+
     else:
         screen.fill((0, 0, 0))
         background.draw(screen, player.x, player.y)
