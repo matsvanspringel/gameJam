@@ -47,7 +47,7 @@ fog_offset = 0
 # Camera shake
 camera_shake = 0
 camera_shake_timer = 0
-def trigger_camera_shake(frames=18, strength=13):
+def trigger_camera_shake(frames=18, strength=5):
     global camera_shake, camera_shake_timer
     camera_shake = strength
     camera_shake_timer = frames
@@ -80,7 +80,7 @@ enemy_animations = [
 ]
 
 day_night_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)).convert_alpha()
-DAY_DURATION = 5_000
+DAY_DURATION = 10_000
 NIGHT_DURATION = 25000
 TRANSITION_DURATION = 5000
 cycle_timer = 0
@@ -131,6 +131,10 @@ printers = []
 enemies = []
 splat_effects = []
 
+# --- NIGHT COUNTER AND PRINTER SPAWN MAX ---
+current_night_count = 0
+printer_spawn_max = 3  # 3 on first night
+
 def is_printer_on_screen(printer, player_x, player_y, screen_w, screen_h):
     center_x = screen_w // 2
     center_y = screen_h // 2
@@ -152,7 +156,6 @@ def spawn_enemies_from_printers():
     for printer in printers:
         if random.random() < 0.019:
             animations = random.choice(enemy_animations)
-            # Some monsters are faster at night
             monsterspeed = random.uniform(2.3, 3.4) if phase == "night" else 1.3
             enemies.append(Enemy(printer, animations, health=3, speed=monsterspeed))
             trigger_camera_shake(frames=random.randint(10, 18), strength=random.randint(8, 15))
@@ -241,14 +244,49 @@ def check_collision(player_obj, enemy_obj):
     enemy_rect = pygame.Rect(enemy_screen_x, enemy_screen_y, enemy_obj.width, enemy_obj.height)
     return player_rect.colliderect(enemy_rect)
 
+# --- DAY COUNTER/TEXT ---
+day_number = 1
+day_text_timer = 0
+DAY_TEXT_DURATION = 180  # frames (~3 seconds at 60 FPS)
+day_text_font = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 90)
+day_text_color = (255, 255, 100)
+
+def show_day_text():
+    global day_text_timer
+    day_text_timer = DAY_TEXT_DURATION
+
+def draw_day_text(surface, day_number):
+    if day_text_timer > 0:
+        text = f"Day {day_number}"
+        txt = day_text_font.render(text, True, day_text_color)
+        x = (SCREEN_WIDTH - txt.get_width()) // 2
+        y = 40
+        # Optional: shadow for visibility
+        shadow = day_text_font.render(text, True, (0,0,0))
+        surface.blit(shadow, (x+3, y+3))
+        surface.blit(txt, (x, y))
+
+# --- Show Day 1 text immediately after start ---
+show_day_text()
+
 while running:
     dt = clock.tick(60)
     prev_phase = phase
+    phase_before_update = phase
     update_day_night(dt)
+
+    # --- Night/day transitions ---
+    if phase_before_update == "night" and phase != "night":
+        current_night_count += 1
+        printer_spawn_max = 3 + current_night_count
+
+    if phase_before_update != "day" and phase == "day":
+        day_number = max(1, current_night_count + 1)
+        show_day_text()
 
     # NIGHT CREEPY EVENTS
     if phase == "night" and not game_over:
-        if random.random() < 0.0008:
+        if random.random() < 0.0004:
             trigger_flash()
         if random.random() < 0.0002:
             trigger_shadow()
@@ -266,15 +304,11 @@ while running:
     printers[:] = [p for p in printers if is_printer_on_screen(p, player.x + dx, player.y + dy, SCREEN_WIDTH, SCREEN_HEIGHT)]
 
     if phase == "night":
-        if len(printers) < 3 and random.random() < 0.01:
+        if len(printers) < printer_spawn_max and random.random() < 0.01:
             printers.append(spawn_printer_near_player(player.x + dx, player.y + dy, SCREEN_WIDTH, SCREEN_HEIGHT))
-    else:
-        printers.clear()
-        enemies.clear()
-
-    if phase == "night":
         spawn_enemies_from_printers()
     else:
+        printers.clear()
         enemies.clear()
 
     nature.update(player.x + dx, player.y + dy)
@@ -303,7 +337,9 @@ while running:
         if not game_over:
             player.handle_event(event)
 
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+        # SHOOT with spacebar or left mouse (after game starts)
+        if ((event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE) or
+            (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1)):
             now = pygame.time.get_ticks()
             if now - last_shot_time >= TOMATO_COOLDOWN:
                 spawn_x = SCREEN_WIDTH // 2
@@ -329,18 +365,9 @@ while running:
 
     projectiles.update()
 
-    # ENEMY MOVEMENT: Always move toward center of screen (player's rendered position)
-    for e in list(enemies):
-        screen_cx = SCREEN_WIDTH // 2
-        screen_cy = SCREEN_HEIGHT // 2
-        enemy_screen_x = screen_cx + (e.x - player.x - dx) - e.width // 2
-        enemy_screen_y = screen_cy + (e.y - player.y - dy) - e.height // 2
-        ddx = screen_cx - enemy_screen_x
-        ddy = screen_cy - enemy_screen_y
-        distance = max(1, (ddx ** 2 + ddy ** 2) ** 0.5)
-        speed = e.speed
-        e.x += ddx / distance * speed
-        e.y += ddy / distance * speed
+    # ENEMY MOVEMENT & ANIMATION: handled inside Enemy.update
+    for e in enemies:
+        e.update(dt, player.x, player.y)
 
     # GAME OVER ON ENEMY COLLISION
     if not game_over:
@@ -383,6 +410,9 @@ while running:
     splat_effects[:] = [s for s in splat_effects if s.update()]
 
     # DRAWING
+    if day_text_timer > 0:
+        day_text_timer -= 1
+
     if game_over:
         screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 120)
@@ -403,6 +433,7 @@ while running:
             if not getattr(proj, "splatted", False):
                 proj.draw(screen)
         player.draw(screen)
+        draw_day_text(screen, day_number)
 
     screen.blit(day_night_overlay, (0, 0))
     if phase == "night" or game_over:
