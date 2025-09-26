@@ -64,27 +64,21 @@ class Player:
     def update(self, dt):
         moving = False
 
-        # Update position + direction
-        if self.move_up:
-            self.speed = 5
-            self.y -= self.speed
-            self.current_direction = 'up'
+        dx, dy = self.get_movement_vector()
+        # Diagonal speed normalization
+        if dx != 0 or dy != 0:
+            length = (dx ** 2 + dy ** 2) ** 0.5
+            dx = dx / length
+            dy = dy / length
+            self.x += dx * self.speed
+            self.y += dy * self.speed
             moving = True
-        elif self.move_down:
-            self.speed = 5
-            self.y += self.speed
-            self.current_direction = 'down'
-            moving = True
-        if self.move_left:
-            self.speed = 5
-            self.x -= self.speed
-            self.current_direction = 'left'
-            moving = True
-        elif self.move_right:
-            self.speed = 5
-            self.x += self.speed
-            self.current_direction = 'right'
-            moving = True
+
+            # Update current direction
+            if abs(dx) > abs(dy):
+                self.current_direction = 'right' if dx > 0 else 'left'
+            else:
+                self.current_direction = 'down' if dy > 0 else 'up'
 
         # Animate if moving
         if moving:
@@ -114,3 +108,11 @@ class Player:
         if self.move_right:
             dx += 1
         return dx, dy
+
+    def get_direction_vector(self):
+        """Returns a normalized direction vector based on movement, or up if idle."""
+        dx, dy = self.get_movement_vector()
+        v = pygame.Vector2(dx, dy)
+        if v.length() == 0:
+            return pygame.Vector2(0, -1)
+        return v.normalize()

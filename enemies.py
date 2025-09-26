@@ -1,47 +1,55 @@
-import random
 import math
 import pygame
+import random
 
 class Enemy:
-    def __init__(self, min_x, max_x, min_y, max_y, width, height, image, health, speed):
-        self.x = random.randint(min_x, max_x)
-        self.y = random.randint(min_y, max_y)
-        self.width = width
-        self.height = height
-        self.image = image
+    def __init__(self, printer, animations, health, speed):
+        # Spawn at printer position
+        self.x = printer.x
+        self.y = printer.y
+        self.width = 32
+        self.height = 32
+
+        # Animation frames
+        self.animations = animations  # list of surfaces
+        self.current_frame = 0
+        self.frame_timer = 0
+        self.frame_speed = 200  # ms per frame
+
+        self.image = self.animations[self.current_frame]
         self.health = health
         self.speed = speed
 
-    def update(self, screen_width, screen_height, player_dx, player_dy):
-        # Midden van het scherm
-        center_x = screen_width // 2
-        center_y = screen_height // 2
+    def update(self, screen_width, screen_height, player_dx, player_dy, dt, player_x=None, player_y=None):
+        # --- Animate ---
+        self.frame_timer += dt
+        if self.frame_timer >= self.frame_speed:
+            self.frame_timer = 0
+            self.current_frame = (self.current_frame + 1) % len(self.animations)
+            self.image = self.animations[self.current_frame]
 
-        dx = center_x - self.x
-        dy = center_y - self.y
+        # --- Movement towards the CENTER OF SCREEN ("player") ---
+        target_x = screen_width // 2
+        target_y = screen_height // 2
+
+        # If player_x and player_y are provided, use them as world coordinates;
+        # but for your requirement, always use screen center as the destination.
+        dx = target_x - (self.x - player_x + target_x if player_x is not None else self.x)
+        dy = target_y - (self.y - player_y + target_y if player_y is not None else self.y)
         distance = math.hypot(dx, dy)
         if distance == 0:
             return
 
-        # Richtingsvector naar speler
         dir_x = dx / distance
         dir_y = dy / distance
 
-        # Projecteer spelerbeweging op richting naar enemy
-        player_speed = math.hypot(player_dx, player_dy)
-        if player_speed != 0:
-            player_dir_x = player_dx / player_speed
-            player_dir_y = player_dy / player_speed
-            dot = dir_x * player_dir_x + dir_y * player_dir_y
-        else:
-            dot = 0
+        self.x += dir_x * self.speed
+        self.y += dir_y * self.speed
 
-        # Pas snelheid aan: sneller als speler weg beweegt, trager als speler naar enemy beweegt
-        speed_factor = 1 - 0.7 * dot  # dot: -1 (weg) tot 1 (naartoe)
-        move_speed = max(0.5, self.speed * speed_factor)
-
-        self.x += dir_x * move_speed
-        self.y += dir_y * move_speed
-
-    def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
+    def draw(self, screen, player_x, player_y):
+        # Draw relative to player (centered on screen)
+        center_x = screen.get_width() // 2
+        center_y = screen.get_height() // 2
+        screen_x = center_x + (self.x - player_x) - self.width // 2
+        screen_y = center_y + (self.y - player_y) - self.height // 2
+        screen.blit(self.image, (screen_x, screen_y))
