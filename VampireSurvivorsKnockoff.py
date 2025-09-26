@@ -245,7 +245,9 @@ while running:
 
     if not game_over:
         player_dx, player_dy = player.get_movement_vector()
-        player.update(dt)
+        # Haal collision rects op van natuur
+        nature_rects = nature.get_collision_rects()
+        player.update(dt, nature_collision_rects=nature_rects)
         background.update_tiles(player.x, player.y)
 
     # Update projectiles

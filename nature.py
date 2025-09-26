@@ -3,7 +3,7 @@ import random
 import os
 
 class NatureManager:
-    def __init__(self, tile_size, screen_width, screen_height, scale=140, max_objects=60):
+    def __init__(self, tile_size, screen_width, screen_height, scale=140, max_objects=25):
         self.tile_size = tile_size
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -33,7 +33,6 @@ class NatureManager:
         """Spawn/despawn objects in a wide area around the player, keeping max_objects."""
         visible_area_width = self.screen_width * 2
         visible_area_height = self.screen_height * 2
-        # Use integer division (//) to ensure ints for randint
         min_x = int(player_x - visible_area_width // 2)
         max_x = int(player_x + visible_area_width // 2)
         min_y = int(player_y - visible_area_height // 2)
@@ -46,12 +45,43 @@ class NatureManager:
                 del self.objects[pos]
 
         # Spawn new objects if under max_objects
-        while len(self.objects) < self.max_objects:
+        attempts = 0
+        while len(self.objects) < self.max_objects and attempts < self.max_objects * 10:
             x = random.randint(min_x, max_x)
             y = random.randint(min_y, max_y)
             sprite = self._choose_sprite()
-            # Store the sprite and its position
+            # Hitbox voor natuur
+            shrink = int(self.scale * 0.1)
+            nature_rect = pygame.Rect(
+                x - self.scale // 2 + shrink // 2,
+                y - self.scale // 2 + shrink // 2,
+                self.scale - shrink,
+                self.scale - shrink
+            )
+            # Hitbox voor speler
+            player_rect = pygame.Rect(player_x - 50, player_y - 50, 100, 100)
+            # Check overlap met speler
+            if player_rect.colliderect(nature_rect):
+                attempts += 1
+                continue
+            # Check overlap met bestaande natuur
+            overlap = False
+            for (ox, oy), _ in self.objects.items():
+                other_rect = pygame.Rect(
+                    ox - self.scale // 2 + shrink // 2,
+                    oy - self.scale // 2 + shrink // 2,
+                    self.scale - shrink,
+                    self.scale - shrink
+                )
+                if nature_rect.colliderect(other_rect):
+                    overlap = True
+                    break
+            if overlap:
+                attempts += 1
+                continue
+            # Geen overlap: toevoegen
             self.objects[(x, y)] = sprite
+            attempts += 1
 
     def draw(self, screen, player_x, player_y):
         """Draw objects relative to player, using world coordinates."""
@@ -62,3 +92,20 @@ class NatureManager:
             screen_x = center_x + (obj_x - player_x) - sprite.get_width() // 2
             screen_y = center_y + (obj_y - player_y) - sprite.get_height() // 2
             screen.blit(sprite, (screen_x, screen_y))
+
+    def get_collision_rects(self):
+        """
+        Geeft een lijst van pygame.Rects van alle natuur-objecten, met dezelfde hitbox-marge
+        als gebruikt bij het spawnen (dus met shrink).
+        """
+        rects = []
+        shrink = int(self.scale * 0.1)
+        for (obj_x, obj_y), sprite in self.objects.items():
+            rect = pygame.Rect(
+                obj_x - self.scale // 2 + shrink // 2,
+                obj_y - self.scale // 2 + shrink // 2,
+                self.scale - shrink,
+                self.scale - shrink
+            )
+            rects.append(rect)
+        return rects
