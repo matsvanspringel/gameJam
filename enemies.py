@@ -19,6 +19,7 @@ class Enemy:
         self.image = self.animations[self.current_frame]
         self.health = health
         self.speed = speed
+        self.visible = True  # Add visible attribute
 
     def update(self, screen_width, screen_height, player_dx, player_dy, dt, player_x=None, player_y=None):
         # --- Animate ---
@@ -52,4 +53,5 @@ class Enemy:
         center_y = screen.get_height() // 2
         screen_x = center_x + (self.x - player_x) - self.width // 2
         screen_y = center_y + (self.y - player_y) - self.height // 2
-        screen.blit(self.image, (screen_x, screen_y))
+        if self.visible:
+            screen.blit(self.image, (screen_x, screen_y))

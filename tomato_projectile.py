@@ -11,8 +11,8 @@ class TomatoProjectile(Projectile):
             self.original_image = pygame.transform.scale(self.original_image, (20, 20))
             self.splat_img = pygame.image.load("assets/images/tomatosplat.png").convert_alpha()
             self.splat_img = pygame.transform.scale(self.splat_img, (30, 30))
-        except pygame.error:
-            # fallback
+        except Exception:
+            # fallback images
             self.original_image = pygame.Surface((10, 10), pygame.SRCALPHA)
             pygame.draw.circle(self.original_image, (255, 0, 0), (5, 5), 5)
             self.splat_img = pygame.Surface((15, 15), pygame.SRCALPHA)
@@ -28,21 +28,18 @@ class TomatoProjectile(Projectile):
 
         # Add small randomness for natural arc
         self.direction += pygame.Vector2(random.uniform(-0.1, 0.1), random.uniform(-0.05, 0.05))
+        if self.direction.length_squared() == 0:
+            self.direction = pygame.Vector2(1, 0)
         self.direction = self.direction.normalize()
 
     def update(self):
         if not self.splatted:
-            # Move projectile
-            self.pos += self.direction * self.speed
-            self.rect.center = self.pos
-
-            # Kill if outside extended bounds
-            margin = 200
-            if (self.rect.right < -margin or self.rect.left > self.screen_width + margin or
-                self.rect.bottom < -margin or self.rect.top > self.screen_height + margin):
-                self.kill()
+            # use parent movement logic so pos and rect update
+            super().update()
+            # Zorg dat de rect altijd klopt met de positie
+            self.rect.center = (self.pos.x, self.pos.y)
         else:
-            # Keep splat visible for 2 seconds
+            # Keep splat visible for 2 seconds then remove
             if pygame.time.get_ticks() - self.splat_time >= 2000:
                 self.kill()
 
@@ -52,3 +49,6 @@ class TomatoProjectile(Projectile):
             self.rect = self.image.get_rect(center=self.rect.center)
             self.splatted = True
             self.splat_time = pygame.time.get_ticks()
+            # stop movement when splatted
+            self.direction = pygame.Vector2(0, 0)
+            self.speed = 0
