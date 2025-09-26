@@ -159,11 +159,6 @@ pygame.mixer.music.set_volume(volume)  # keeps compatibility with your start scr
 background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
 player = Player(0, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 
-enemy_image = pygame.image.load("Assets/Images/enemies/pizzaHigh.png").convert_alpha()
-enemy_image = pygame.transform.scale(enemy_image, (50, 50))
-enemy = Enemy(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT, 50, 50, enemy_image, health=100, speed=2)
-enemy.visible = True  # Add visible attribute
-
 nature = NatureManager(tile_size=100, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 
 # -------------------------
@@ -317,13 +312,9 @@ while running:
             proj.update()
 
         # Projectile-enemy collision (continuous check)
-        check_projectile_enemy_collision(projectiles, enemy)
-
-        if enemy.visible and check_collision(player, enemy):
-            game_over = True
 
     # --- Drawing ---
-     if game_over:
+    if game_over:
         screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 120)
         text = font.render("Game Over", True, (255, 0, 0))
@@ -332,9 +323,7 @@ while running:
     else:
         screen.fill((0, 0, 0))
         background.draw(screen, player.x, player.y)
-        nature.draw(screen, player.x, player.y)
-        if enemy.visible:
-            enemy.draw(screen)
+        nature.draw(screen, player.x, player.y)  
         # Draw printers (at their rect positions)
     for p in printers:
         p.draw(screen, player.x, player.y)

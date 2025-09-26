@@ -92,12 +92,15 @@ class Player:
             direction.x = 1
             moving = True
 
-            # Update current direction
-            if abs(dx) > abs(dy):
-                self.current_direction = 'right' if dx > 0 else 'left'
-            else:
-                self.current_direction = 'down' if dy > 0 else 'up'
-
+        # Update current direction
+        if moving:
+            self.facing = direction.normalize()
+            self.animation_timer += dt
+            if self.animation_timer >= self.animation_speed:
+                self.animation_timer = 0
+                self.frame_index = (self.frame_index + 1) % 2
+        else:
+            self.frame_index = 0  # idle stays on first frame
         # Animate if moving
         if moving:
             self.facing = direction.normalize()
