@@ -147,7 +147,7 @@ while running:
         player.handle_event(event)
 
 
-    # Handle shooting
+    # Handle shootingt
         keys = pygame.key.get_pressed()
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             now = pygame.time.get_ticks()
