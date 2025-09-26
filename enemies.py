@@ -11,6 +11,7 @@ class Enemy:
         self.image = image
         self.health = health
         self.speed = speed
+        self.visible = True  # Add visible attribute
 
     def update(self, screen_width, screen_height, player_dx, player_dy):
         # Midden van het scherm
@@ -44,4 +45,5 @@ class Enemy:
         self.y += dir_y * move_speed
 
     def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
+        if self.visible:
+            screen.blit(self.image, (self.x, self.y))

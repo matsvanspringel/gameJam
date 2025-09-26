@@ -102,6 +102,7 @@ player = Player(0, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 enemy_image = pygame.image.load("Assets/Images/enemies/pizzaHigh.png").convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (50, 50))
 enemy = Enemy(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT, 50, 50, enemy_image, health=100, speed=2)
+enemy.visible = True  # Add visible attribute
 
 nature = NatureManager(tile_size=100, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
 
@@ -126,6 +127,18 @@ def check_collision(player, enemy):
     )
     return player_rect.colliderect(enemy_rect)
 
+def check_projectile_enemy_collision(projectiles, enemy):
+    if not enemy.visible:
+        return
+    enemy_rect = pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)
+    for proj in list(projectiles):
+        # Zorg dat de rect van de projectile klopt met de huidige positie
+        proj.rect.center = (proj.pos.x, proj.pos.y)
+        if enemy_rect.colliderect(proj.rect):
+            enemy.visible = False
+            if hasattr(proj, "hit_enemy"):
+                proj.hit_enemy()
+
 while running:
     dt = clock.tick(60)
 
@@ -142,7 +155,7 @@ while running:
         player.handle_event(event)
 
 
-    # Handle shooting
+        # Handle shooting
         keys = pygame.key.get_pressed()
         # When handling shoot input, spawn at player world position:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -150,10 +163,16 @@ while running:
             if now - last_shot_time >= TOMATO_COOLDOWN:
                 spawn_x = player.x
                 spawn_y = player.y
-                dir_vec = player.get_direction_vector()
-                dir_vec = pygame.Vector2(dir_vec)
+
+                # Richting naar muis in wereldcoördinaten
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                world_mouse_x = player.x + (mouse_x - SCREEN_WIDTH // 2)
+                world_mouse_y = player.y + (mouse_y - SCREEN_HEIGHT // 2)
+                dir_vec = pygame.Vector2(world_mouse_x - player.x, world_mouse_y - player.y)
                 if dir_vec.length_squared() == 0:
                     dir_vec = pygame.Vector2(1, 0)
+                dir_vec = dir_vec.normalize()
+
                 tomato = TomatoProjectile(spawn_x, spawn_y, dir_vec, speed=12,
                                           screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
                 projectiles.add(tomato)
@@ -185,7 +204,14 @@ while running:
         background.update_tiles(player.x, player.y)
         enemy.update(SCREEN_WIDTH, SCREEN_HEIGHT, player_dx, player_dy)
 
-        if check_collision(player, enemy):
+        # Update all projectiles (move them)
+        for proj in list(projectiles):
+            proj.update()
+
+        # Projectile-enemy collision (continuous check)
+        check_projectile_enemy_collision(projectiles, enemy)
+
+        if enemy.visible and check_collision(player, enemy):
             game_over = True
 
     # Draw everything
@@ -198,7 +224,8 @@ while running:
     else:
         screen.fill((0, 0, 0))
         background.draw(screen, player.x, player.y)
-        enemy.draw(screen)
+        if enemy.visible:
+            enemy.draw(screen)
         player.draw(screen)
         # Drawing projectiles (convert world -> screen using camera centered on player)
         for proj in projectiles:
@@ -210,4 +237,5 @@ while running:
     pygame.display.flip()
 
 pygame.quit()
+sys.exit()
 sys.exit()

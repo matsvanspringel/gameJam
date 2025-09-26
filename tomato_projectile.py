@@ -36,6 +36,8 @@ class TomatoProjectile(Projectile):
         if not self.splatted:
             # use parent movement logic so pos and rect update
             super().update()
+            # Zorg dat de rect altijd klopt met de positie
+            self.rect.center = (self.pos.x, self.pos.y)
         else:
             # Keep splat visible for 2 seconds then remove
             if pygame.time.get_ticks() - self.splat_time >= 2000:
