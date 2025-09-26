@@ -32,22 +32,22 @@ def vignette_surface(width, height, strength=1.7, alpha_max=210):
     return surf
 
 vignette_overlay = vignette_surface(SCREEN_WIDTH, SCREEN_HEIGHT)
-deep_vignette = vignette_surface(SCREEN_WIDTH, SCREEN_HEIGHT, strength=2.8, alpha_max=255)
+deep_vignette = vignette_surface(SCREEN_WIDTH, SCREEN_HEIGHT, strength=2.5, alpha_max=255)
 night_tint = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-night_tint.fill((20, 0, 50, 55))
+night_tint.fill((20, 0, 50, 15))
 
 try:
     fog_img = pygame.image.load("assets/images/fog.png").convert_alpha()
     fog_img = pygame.transform.scale(fog_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 except Exception:
     fog_img = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    fog_img.fill((180, 180, 200, 45))
+    fog_img.fill((180, 180, 200, 5))
 fog_offset = 0
 
 # Camera shake
 camera_shake = 0
 camera_shake_timer = 0
-def trigger_camera_shake(frames=18, strength=5):
+def trigger_camera_shake(frames=3, strength=1):
     global camera_shake, camera_shake_timer
     camera_shake = strength
     camera_shake_timer = frames
@@ -158,7 +158,7 @@ def spawn_enemies_from_printers():
             animations = random.choice(enemy_animations)
             monsterspeed = random.uniform(2.3, 3.4) if phase == "night" else 1.3
             enemies.append(Enemy(printer, animations, health=3, speed=monsterspeed))
-            trigger_camera_shake(frames=random.randint(10, 18), strength=random.randint(8, 15))
+            trigger_camera_shake(frames=random.randint(10, 18), strength=random.randint(1, 2))
 
 volume = show_start_screen(screen)
 pygame.mixer.music.set_volume(volume)
