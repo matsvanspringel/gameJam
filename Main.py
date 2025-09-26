@@ -60,7 +60,7 @@ night_music_channel = pygame.mixer.Channel(1)
 silly_music_channel.play(silly_music, loops=-1)
 night_music_channel.play(night_music, loops=-1)
 DAY_MAX_VOLUME = 0.5
-NIGHT_MAX_VOLUME = 0.85
+NIGHT_MAX_VOLUME = 1
 silly_music_channel.set_volume(DAY_MAX_VOLUME)
 night_music_channel.set_volume(0)
 
