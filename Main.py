@@ -247,7 +247,7 @@ def check_collision(player_obj, enemy_obj):
 # --- DAY COUNTER/TEXT ---
 day_number = 1
 day_text_timer = 0
-DAY_TEXT_DURATION = 180  # frames (~3 seconds at 60 FPS)
+DAY_TEXT_DURATION = 180  # frames (3 seconds at 60 FPS)
 day_text_font = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 90)
 day_text_color = (255, 255, 100)
 
