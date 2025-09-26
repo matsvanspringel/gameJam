@@ -138,9 +138,6 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                running = False
         if not game_over:
             player.handle_event(event)
         # Handle shooting
@@ -165,7 +162,9 @@ while running:
                     pygame.mixer.music.set_volume(volume)
 
                     background = Background("assets/images/RandomAssBackground.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
-                    player = Player( speed=5, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+                    player = Player( 0, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+                    phase = "day"
+                    enemy = Enemy(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT, 50, 50, enemy_image, health=100, speed=2)
 
                     #OTHER THINGS CAN BE RESET HERE
 
@@ -185,12 +184,18 @@ while running:
             game_over = True
 
     # Draw everything
-    if game_over:
+    while game_over:
         screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 120)
         text = font.render("Game Over", True, (255, 0, 0))
         text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         screen.blit(text, text_rect)
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            volume = show_start_screen(screen)
+            game_over = False
+            continue
+
     else:
         screen.fill((0, 0, 0))
         background.draw(screen, player.x, player.y)
