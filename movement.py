@@ -32,11 +32,12 @@ class Player:
         self.animation_timer = 0
         self.animation_speed = 200  # ms per frame
 
-        self.x = 0
-        self.y = 0
+        self.x = screen_width // 2
+        self.y = screen_height // 2
+        self.speed = speed
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.speed = speed
+        self.facing = pygame.Vector2(1, 0)  # default facing right
 
         # Movement flags
         self.move_up = self.move_down = self.move_left = self.move_right = False
@@ -63,31 +64,37 @@ class Player:
 
     def update(self, dt):
         moving = False
+        direction = pygame.Vector2(0, 0)
 
         # Update position + direction
         if self.move_up:
             self.speed = 5
             self.y -= self.speed
             self.current_direction = 'up'
+            direction.y = -1
             moving = True
         elif self.move_down:
             self.speed = 5
             self.y += self.speed
             self.current_direction = 'down'
+            direction.y = 1
             moving = True
         if self.move_left:
             self.speed = 5
             self.x -= self.speed
             self.current_direction = 'left'
+            direction.x = -1
             moving = True
         elif self.move_right:
             self.speed = 5
             self.x += self.speed
             self.current_direction = 'right'
+            direction.x = 1
             moving = True
 
-        # Animate if moving
+        # Update facing direction based on movement
         if moving:
+            self.facing = direction.normalize()
             self.animation_timer += dt
             if self.animation_timer >= self.animation_speed:
                 self.animation_timer = 0
@@ -113,4 +120,22 @@ class Player:
             dx -= 1
         if self.move_right:
             dx += 1
-        return dx, dy
+        return pygame.Vector2(dx, dy)
+
+    def get_direction_vector(self):
+        direction = pygame.Vector2(0, 0)
+        
+        if self.move_up:
+            direction.y = -1
+        if self.move_down:
+            direction.y = 1
+        if self.move_left:
+            direction.x = -1
+        if self.move_right:
+            direction.x = 1
+            
+        if direction.length_squared() == 0:
+            # If not moving, use stored facing direction
+            return self.facing.normalize()
+        
+        return direction.normalize()

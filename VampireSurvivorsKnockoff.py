@@ -144,17 +144,21 @@ while running:
 
     # Handle shooting
         keys = pygame.key.get_pressed()
+        # When handling shoot input, spawn at player world position:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             now = pygame.time.get_ticks()
             if now - last_shot_time >= TOMATO_COOLDOWN:
-                tomato = TomatoProjectile(
-                    player.screen_width // 2,  # spawn at player center (screen coordinates)
-                    player.screen_height // 2,
-                    player.get_movement_vector(),  # add this method in Player to return facing vector
-                    speed=12
-                )
+                spawn_x = player.x
+                spawn_y = player.y
+                dir_vec = player.get_direction_vector()
+                dir_vec = pygame.Vector2(dir_vec)
+                if dir_vec.length_squared() == 0:
+                    dir_vec = pygame.Vector2(1, 0)
+                tomato = TomatoProjectile(spawn_x, spawn_y, dir_vec, speed=12,
+                                          screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
                 projectiles.add(tomato)
                 last_shot_time = now
+                print("spawned tomato", spawn_x, spawn_y, dir_vec)
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 choice = show_pause_screen(screen)
@@ -196,9 +200,14 @@ while running:
         background.draw(screen, player.x, player.y)
         enemy.draw(screen)
         player.draw(screen)
+        # Drawing projectiles (convert world -> screen using camera centered on player)
+        for proj in projectiles:
+            screen_x = int(proj.pos.x - player.x + SCREEN_WIDTH // 2)
+            screen_y = int(proj.pos.y - player.y + SCREEN_HEIGHT // 2)
+            r = proj.image.get_rect(center=(screen_x, screen_y))
+            screen.blit(proj.image, r)
   
     pygame.display.flip()
 
 pygame.quit()
 sys.exit()
- 

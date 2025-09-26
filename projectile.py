@@ -1,4 +1,4 @@
-# projectile.py
+ # projectile.py
 import pygame
 
 class Projectile(pygame.sprite.Sprite):
@@ -10,9 +10,12 @@ class Projectile(pygame.sprite.Sprite):
 
         # Ensure direction is a normalized Vector2
         if not isinstance(direction, pygame.Vector2):
-            direction = pygame.Vector2(direction)
+            try:
+                direction = pygame.Vector2(direction)
+            except Exception:
+                direction = pygame.Vector2(1, 0)
         if direction.length_squared() == 0:
-            direction = pygame.Vector2(0, -1)  # fallback
+            direction = pygame.Vector2(1, 0)
         self.direction = direction.normalize()
 
         self.speed = speed
@@ -25,7 +28,8 @@ class Projectile(pygame.sprite.Sprite):
     def update(self):
         # Move using world position
         self.pos += self.direction * self.speed
-        self.rect.center = self.pos
+        # keep rect in sync with world pos
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
 
         # Kill if outside the extended screen bounds (allow projectiles slightly offscreen)
         margin = 200
