@@ -17,6 +17,9 @@ class Printer:
 
         self.spawn_time = pygame.time.get_ticks()  # Record spawn time
 
+        # Add a hitbox rect (world coordinates)
+        self.hitbox = pygame.Rect(self.x - self.width // 2, self.y - self.height // 2, self.width, self.height)
+
     def draw(self, screen, player_x, player_y):
         # Calculate fade factor (0.0 to 1.0 over 3 seconds)
         elapsed = (pygame.time.get_ticks() - self.spawn_time) / 3000
@@ -37,3 +40,9 @@ class Printer:
         # Blit both with alpha for crossfade
         screen.blit(img1, (screen_x, screen_y))
         screen.blit(img2, (screen_x, screen_y))
+
+    def get_hitbox(self):
+        # Always return the hitbox updated to current world coordinates
+        self.hitbox.x = self.x - self.width // 2
+        self.hitbox.y = self.y - self.height // 2
+        return self.hitbox
