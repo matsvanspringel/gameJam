@@ -23,6 +23,8 @@ screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
 pygame.display.set_caption("Vampire Survivors Clone")
 
+#played booleans for 1 time music
+game_over_sound_played = False
 # -------------------------
 # Load enemy animations AFTER display is set
 # -------------------------
@@ -46,9 +48,12 @@ enemy_animations = [
 # -------------------------
 silly_music = pygame.mixer.Sound("assets/sounds/SillyMusic.mp3")
 night_music = pygame.mixer.Sound("assets/sounds/nightime.mp3")  # ensure filename matches your file
+game_over_sound = pygame.mixer.Sound("assets/Sounds/soundEffects/gameOver.wav")
 
 silly_music_channel = pygame.mixer.Channel(0)
 night_music_channel = pygame.mixer.Channel(1)
+game_over_channel = pygame.mixer.Channel(3)
+
 silly_music_channel.play(silly_music, loops=-1)
 night_music_channel.play(night_music, loops=-1)
 
@@ -244,8 +249,10 @@ while running:
         if not game_over:
             player.handle_event(event)
 
-        # Shooting (space)
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not game_over:
+
+    # Handle shootingt
+        keys = pygame.key.get_pressed()
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             now = pygame.time.get_ticks()
             if now - last_shot_time >= TOMATO_COOLDOWN:
                 # Spawn tomato from player's WORLD position (player.x, player.y)
