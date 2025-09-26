@@ -3,7 +3,7 @@ import random
 import os
 
 class NatureManager:
-    def __init__(self, tile_size, screen_width, screen_height, scale=140, max_objects=25):
+    def __init__(self, tile_size, screen_width, screen_height, scale=120, max_objects=25):
         self.tile_size = tile_size
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -23,6 +23,9 @@ class NatureManager:
         self.bush = bush
 
         self.objects = {}  # {(tx, ty): (sprite, offset_x, offset_y)}
+
+        # Even smaller hitbox: shrink is now 50% of scale!
+        self.hitbox_shrink = int(self.scale * 0.5)
 
     def _choose_sprite(self):
         """Weighted random: bush 4x more likely"""
@@ -50,8 +53,8 @@ class NatureManager:
             x = random.randint(min_x, max_x)
             y = random.randint(min_y, max_y)
             sprite = self._choose_sprite()
-            # Hitbox voor natuur
-            shrink = int(self.scale * 0.1)
+            # Much smaller hitbox for nature
+            shrink = self.hitbox_shrink
             nature_rect = pygame.Rect(
                 x - self.scale // 2 + shrink // 2,
                 y - self.scale // 2 + shrink // 2,
@@ -99,7 +102,7 @@ class NatureManager:
         als gebruikt bij het spawnen (dus met shrink).
         """
         rects = []
-        shrink = int(self.scale * 0.1)
+        shrink = self.hitbox_shrink
         for (obj_x, obj_y), sprite in self.objects.items():
             rect = pygame.Rect(
                 obj_x - self.scale // 2 + shrink // 2,

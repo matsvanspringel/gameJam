@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+import math
 from background import Background
 from movement import Player
 from enemies import Enemy, SplatEffect
@@ -10,56 +11,59 @@ from tomato_projectile import TomatoProjectile
 from pauzescreen import show_pause_screen
 from printer import Printer
 
-# -------------------------
-# Initialize Pygame & Mixer
-# -------------------------
 pygame.init()
 pygame.mixer.init()
 
-# -------------------------
-# Screen setup (fullscreen)
-# -------------------------
+# Screen setup
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
 pygame.display.set_caption("Vampire Survivors Clone")
 
-# ========== NIGHT EFFECTS INITIALIZATION ==========
-
-def create_vignette_surface(width, height):
-    vignette = pygame.Surface((width, height), pygame.SRCALPHA)
+# Overlays & effects
+def vignette_surface(width, height, strength=1.7, alpha_max=210):
+    surf = pygame.Surface((width, height), pygame.SRCALPHA)
     for y in range(height):
         for x in range(width):
-            dx = x - width // 2
-            dy = y - height // 2
+            dx, dy = x - width // 2, y - height // 2
             dist = (dx*dx + dy*dy) ** 0.5
             max_dist = (width**2 + height**2) ** 0.5 / 2
-            alpha = int(160 * min(1, (dist / max_dist) ** 1.4))
-            vignette.set_at((x, y), (0, 0, 0, alpha))
-    return vignette
+            alpha = int(alpha_max * min(1, (dist / max_dist) ** strength))
+            surf.set_at((x, y), (0, 0, 0, alpha))
+    return surf
 
-vignette_overlay = create_vignette_surface(SCREEN_WIDTH, SCREEN_HEIGHT)
+vignette_overlay = vignette_surface(SCREEN_WIDTH, SCREEN_HEIGHT)
+deep_vignette = vignette_surface(SCREEN_WIDTH, SCREEN_HEIGHT, strength=2.8, alpha_max=255)
+night_tint = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+night_tint.fill((20, 0, 50, 55))
 
 try:
     fog_img = pygame.image.load("assets/images/fog.png").convert_alpha()
     fog_img = pygame.transform.scale(fog_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 except Exception:
     fog_img = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    fog_img.fill((180, 180, 200, 22))
+    fog_img.fill((180, 180, 200, 45))
 fog_offset = 0
-
-night_tint = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-night_tint.fill((40, 0, 80, 32))
 
 # Camera shake
 camera_shake = 0
 camera_shake_timer = 0
-
-def trigger_camera_shake(frames=16, strength=10):
+def trigger_camera_shake(frames=18, strength=13):
     global camera_shake, camera_shake_timer
     camera_shake = strength
     camera_shake_timer = frames
 
-game_over_sound_played = False
+# Music
+silly_music = pygame.mixer.Sound("assets/sounds/SillyMusic.mp3")
+night_music = pygame.mixer.Sound("assets/sounds/nightime.mp3")
+silly_music_channel = pygame.mixer.Channel(0)
+night_music_channel = pygame.mixer.Channel(1)
+silly_music_channel.play(silly_music, loops=-1)
+night_music_channel.play(night_music, loops=-1)
+DAY_MAX_VOLUME = 0.5
+NIGHT_MAX_VOLUME = 0.85
+silly_music_channel.set_volume(DAY_MAX_VOLUME)
+night_music_channel.set_volume(0)
+
 enemy_animations = [
     [
         pygame.transform.scale(pygame.image.load("assets/images/enemies/burgerHigh.png").convert_alpha(), (50, 50)),
@@ -75,26 +79,10 @@ enemy_animations = [
     ],
 ]
 
-silly_music = pygame.mixer.Sound("assets/sounds/SillyMusic.mp3")
-night_music = pygame.mixer.Sound("assets/sounds/nightime.mp3")
-game_over_sound = pygame.mixer.Sound("assets/Sounds/soundEffects/gameOver.wav")
-
-silly_music_channel = pygame.mixer.Channel(0)
-night_music_channel = pygame.mixer.Channel(1)
-game_over_channel = pygame.mixer.Channel(3)
-
-silly_music_channel.play(silly_music, loops=-1)
-night_music_channel.play(night_music, loops=-1)
-
-DAY_MAX_VOLUME = 0.5
-NIGHT_MAX_VOLUME = 0.8
-silly_music_channel.set_volume(DAY_MAX_VOLUME)
-night_music_channel.set_volume(0.0)
-
 day_night_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)).convert_alpha()
-DAY_DURATION = 1_000
-NIGHT_DURATION = 30_000
-TRANSITION_DURATION = 5_000
+DAY_DURATION = 5_000
+NIGHT_DURATION = 25000
+TRANSITION_DURATION = 5000
 cycle_timer = 0
 phase = "day"
 prev_phase = "day"
@@ -114,7 +102,7 @@ def update_day_night(dt):
         alpha = 0
     elif phase == "day_to_night":
         t = min(1.0, cycle_timer / TRANSITION_DURATION)
-        alpha = int(t * 140)
+        alpha = int(t * 120)
         silly_vol = DAY_MAX_VOLUME * (1 - t)
         night_vol = NIGHT_MAX_VOLUME * t
         if cycle_timer >= TRANSITION_DURATION:
@@ -126,10 +114,10 @@ def update_day_night(dt):
             cycle_timer = 0
         silly_vol = 0.0
         night_vol = NIGHT_MAX_VOLUME
-        alpha = 140
+        alpha = 120
     elif phase == "night_to_day":
         t = min(1.0, cycle_timer / TRANSITION_DURATION)
-        alpha = int((1 - t) * 140)
+        alpha = int((1 - t) * 120)
         silly_vol = DAY_MAX_VOLUME * t
         night_vol = NIGHT_MAX_VOLUME * (1 - t)
         if cycle_timer >= TRANSITION_DURATION:
@@ -162,10 +150,12 @@ def spawn_enemies_from_printers():
     if not printers:
         return
     for printer in printers:
-        if random.random() < 0.01:
+        if random.random() < 0.019:
             animations = random.choice(enemy_animations)
-            enemies.append(Enemy(printer, animations, health=3, speed=2))
-            trigger_camera_shake(frames=9, strength=8)
+            # Some monsters are faster at night
+            monsterspeed = random.uniform(2.3, 3.4) if phase == "night" else 1.3
+            enemies.append(Enemy(printer, animations, health=3, speed=monsterspeed))
+            trigger_camera_shake(frames=random.randint(10, 18), strength=random.randint(8, 15))
 
 volume = show_start_screen(screen)
 pygame.mixer.music.set_volume(volume)
@@ -182,28 +172,38 @@ clock = pygame.time.Clock()
 running = True
 game_over = False
 
-class SplatEffect:
-    def __init__(self, x, y, duration=2000):
-        try:
-            self.image = pygame.image.load("assets/images/tomatosplat.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (30, 30))
-        except Exception:
-            self.image = pygame.Surface((30, 30), pygame.SRCALPHA)
-            pygame.draw.circle(self.image, (200, 0, 0), (15, 15), 15)
-        self.x = x
-        self.y = y
-        self.start_time = pygame.time.get_ticks()
-        self.duration = duration
+# --- NIGHT CREEPY STATE ---
+flash_timer = 0
+creep_text_timer = 0
+creep_text_font = pygame.font.SysFont("Arial", 110, bold=True)
+creep_texts = ["RUN", "BEHIND YOU", "STOP", "NO HOPE", "STAY STILL", "IT'S CLOSE"]
 
-    def update(self):
-        return pygame.time.get_ticks() - self.start_time < self.duration
+shadow_timer = 0
+shadow_side = 1
+shadow_y = 0
 
-    def draw(self, screen, player_x, player_y):
-        center_x = screen.get_width() // 2
-        center_y = screen.get_height() // 2
-        screen_x = center_x + (self.x - player_x) - self.image.get_width() // 2
-        screen_y = center_y + (self.y - player_y) - self.image.get_height() // 2
-        screen.blit(self.image, (screen_x, screen_y))
+def trigger_flash():
+    global flash_timer
+    flash_timer = 8
+
+def trigger_creep_text():
+    global creep_text_timer
+    creep_text_timer = 65
+
+def trigger_shadow():
+    global shadow_timer, shadow_side, shadow_y
+    shadow_timer = 27
+    shadow_side = random.choice([-1, 1])
+    shadow_y = random.randint(80, SCREEN_HEIGHT-180)
+
+def draw_creep_shadow(screen):
+    surf = pygame.Surface((120, 170), pygame.SRCALPHA)
+    pygame.draw.ellipse(surf, (30,30,25,210), (2, 110, 115, 48))
+    pygame.draw.rect(surf, (0,0,0,230), (33, 64, 54, 75), border_radius=19)
+    pygame.draw.ellipse(surf, (0,0,0,225), (23, 13, 74, 74))
+    pygame.draw.ellipse(surf, (255,255,255,200), (50, 38, 12, 12))
+    pygame.draw.ellipse(surf, (255,255,255,200), (73, 37, 12, 12))
+    return surf
 
 shoot_text_timer = 0
 shoot_text_shake = 0
@@ -212,14 +212,14 @@ shoot_text_color = (255, 32, 32)
 
 def start_shoot_text():
     global shoot_text_timer, shoot_text_shake
-    shoot_text_timer = 180  # 3 seconds at 60 FPS
+    shoot_text_timer = 180
     shoot_text_shake = 13
 
 def draw_shoot_text(surface):
     global shoot_text_timer, shoot_text_shake
     if shoot_text_timer > 0:
         txt = shoot_text_font.render("SHOOT", True, shoot_text_color)
-        for _ in range(8):  # Layer effect for more shake
+        for _ in range(7):
             offset_x = random.randint(-shoot_text_shake, shoot_text_shake)
             offset_y = random.randint(-shoot_text_shake, shoot_text_shake)
             surface.blit(txt, (
@@ -228,7 +228,7 @@ def draw_shoot_text(surface):
             ))
         shoot_text_timer -= 1
         if shoot_text_shake > 2:
-            shoot_text_shake -= 1  # Reduce shake over time
+            shoot_text_shake -= 1
 
 def check_collision(player_obj, enemy_obj):
     player_rect = pygame.Rect(
@@ -246,7 +246,16 @@ while running:
     prev_phase = phase
     update_day_night(dt)
 
-    # ---- CAMERA SHAKE update ----
+    # NIGHT CREEPY EVENTS
+    if phase == "night" and not game_over:
+        if random.random() < 0.0008:
+            trigger_flash()
+        if random.random() < 0.0002:
+            trigger_shadow()
+        if random.random() < 0.0001:
+            trigger_creep_text()
+
+    # CAMERA SHAKE update
     if camera_shake_timer > 0:
         camera_shake_timer -= 1
         dx = random.randint(-camera_shake, camera_shake)
@@ -257,7 +266,7 @@ while running:
     printers[:] = [p for p in printers if is_printer_on_screen(p, player.x + dx, player.y + dy, SCREEN_WIDTH, SCREEN_HEIGHT)]
 
     if phase == "night":
-        if len(printers) < 3 and random.random() < 0.005:
+        if len(printers) < 3 and random.random() < 0.01:
             printers.append(spawn_printer_near_player(player.x + dx, player.y + dy, SCREEN_WIDTH, SCREEN_HEIGHT))
     else:
         printers.clear()
@@ -318,10 +327,9 @@ while running:
         player.update(dt, nature_collision_rects=nature_rects)
         background.update_tiles(player.x, player.y)
 
-
     projectiles.update()
 
-    # --- ENEMY MOVEMENT: Always move toward center of screen (player's rendered position) ---
+    # ENEMY MOVEMENT: Always move toward center of screen (player's rendered position)
     for e in list(enemies):
         screen_cx = SCREEN_WIDTH // 2
         screen_cy = SCREEN_HEIGHT // 2
@@ -334,11 +342,12 @@ while running:
         e.x += ddx / distance * speed
         e.y += ddy / distance * speed
 
-    # --- GAME OVER ON ENEMY COLLISION (not printer/portal collision) ---
+    # GAME OVER ON ENEMY COLLISION
     if not game_over:
         for e in enemies[:]:
             if check_collision(player, e):
                 game_over = True
+                trigger_flash()
                 break
 
     for e in enemies[:]:
@@ -373,7 +382,7 @@ while running:
 
     splat_effects[:] = [s for s in splat_effects if s.update()]
 
-    # ---------- DRAWING ----------
+    # DRAWING
     if game_over:
         screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 120)
@@ -396,14 +405,44 @@ while running:
         player.draw(screen)
 
     screen.blit(day_night_overlay, (0, 0))
-    if phase == "night":
+    if phase == "night" or game_over:
         fog_offset = (fog_offset + 1) % SCREEN_WIDTH
         screen.blit(fog_img, (-fog_offset, 0))
         if fog_offset > 0:
             screen.blit(fog_img, (SCREEN_WIDTH - fog_offset, 0))
-        screen.blit(vignette_overlay, (0, 0))
+        screen.blit(deep_vignette, (0, 0))
         screen.blit(night_tint, (0, 0))
+        # Night flash (simulate lightning/fear)
+        if flash_timer > 0 and flash_timer % 2 == 0:
+            flash = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            flash.fill((255,255,255, random.randint(60,110)))
+            screen.blit(flash, (0,0))
+        # Shadow figure
+        if shadow_timer > 0:
+            shadow_img = draw_creep_shadow(screen)
+            if shadow_side == 1:
+                x = int(SCREEN_WIDTH * 0.85 - shadow_timer*20)
+            else:
+                x = int(SCREEN_WIDTH * 0.15 + shadow_timer*20)
+            y = shadow_y
+            alpha = max(40, min(255, shadow_timer*10))
+            shadow_img.set_alpha(alpha)
+            screen.blit(shadow_img, (x, y))
+            shadow_timer -= 1
+        # Creep text
+        if creep_text_timer > 0:
+            text = creep_text_font.render(random.choice(creep_texts), True, (255, 30, 30))
+            for _ in range(8):
+                offset_x = random.randint(-17, 17)
+                offset_y = random.randint(-17, 17)
+                screen.blit(text, (
+                    SCREEN_WIDTH // 2 - text.get_width() // 2 + offset_x,
+                    SCREEN_HEIGHT // 2 - 180 + offset_y
+                ))
+            creep_text_timer -= 1
         draw_shoot_text(screen)
+        if flash_timer > 0:
+            flash_timer -= 1
 
     pygame.display.flip()
 
